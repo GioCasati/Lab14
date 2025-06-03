@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import networkx as nx
 from database.DAO import DAO
 
@@ -7,6 +9,8 @@ class Model:
         self._allNodes = []
         self._allEdges = []
         self._idMapOrdini = {}
+        self._heaviestPath = None
+        self._highestCost = 0
 
     @staticmethod
     def _getAllStores():
@@ -30,5 +34,33 @@ class Model:
                 self._grafo.add_edge(source, target, weight=edge['weight'])
         return self._grafo.number_of_nodes(), self._grafo.number_of_edges()
 
-    def getLongestPath(self):
-        return
+    def _getLongestPath(self, start):
+        x = list(nx.bfs_tree(self._grafo, start)) # non ha senso
+        x.remove(start)
+        return x
+
+    def _getHeaviestPath(self, start):
+        self._heaviestPath = None
+        self._highestCost = 0
+        parziale = [start]
+        for node in nx.neighbors(self._grafo, start):
+            parziale.append(node)
+            self._ricorsione(parziale)
+            parziale.pop()
+        return self._heaviestPath, self._highestCost
+
+    def _ricorsione(self, parziale):
+        if (new_costo := self._costo(parziale)) > self._highestCost:
+            self._highestCost = new_costo
+            self._heaviestPath = deepcopy(parziale)
+        for node in nx.neighbors(self._grafo, prec := parziale[-1]):
+            if self._grafo[prec][node]['weight'] < self._grafo[parziale[-2]][prec]['weight']:
+                parziale.append(node)
+                self._ricorsione(parziale)
+                parziale.pop()
+
+    def _costo(self, parziale):
+        costo = 0
+        for i in range(1, len(parziale)):
+            costo += self._grafo[parziale[i - 1]][parziale[i]]['weight']
+        return costo

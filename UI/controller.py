@@ -16,6 +16,7 @@ class Controller:
             self._view._ddStore.options.append(ft.dropdown.Option(data=store, key=str(store), on_click=self._readDDStore))
 
     def handleCreaGrafo(self, e):
+        self._node = None
         if not self._store:
             self._view.txt_result.controls.clear()
             self._view.txt_result.controls.append(ft.Text("Seleziona uno store!", color="red"))
@@ -35,6 +36,8 @@ class Controller:
         self._view._ddNode.options.clear()
         for node in self._model._getAllNodes():
             self._view._ddNode.options.append(ft.dropdown.Option(data=node, key=str(node), on_click=self._readDDNode))
+        self._view._btnCerca.disabled = False
+        self._view._btnRicorsione.disabled = False
         self._view.update_page()
 
     def handleCerca(self, e):
@@ -43,12 +46,23 @@ class Controller:
             self._view.txt_result.controls.append(ft.Text("Seleziona un nodo di partenza!", color="red"))
             self._view.update_page()
             return
-        for node in self._model.getLongestPath():
+
+        self._view.txt_result.controls.append(ft.Text(f"Percorso più lungo che parte da {self._node}:"))
+        for node in self._model._getLongestPath(self._node):
             self._view.txt_result.controls.append(ft.Text(node))
         self._view.update_page()
 
     def handleRicorsione(self, e):
-        pass
+        self._view.txt_result.controls.clear()
+        if not self._node:
+            self._view.txt_result.controls.append(ft.Text("Seleziona un nodo di partenza!", color="red"))
+            self._view.update_page()
+            return
+        nodes, cost = self._model._getHeaviestPath(self._node)
+        self._view.txt_result.controls.append(ft.Text(f"Percorso di peso maggiore che parte da {self._node}, con costo {cost}"))
+        for node in nodes:
+            self._view.txt_result.controls.append(ft.Text(node))
+        self._view.update_page()
 
     def _readDDStore(self, e):
         self._store = e.control.data

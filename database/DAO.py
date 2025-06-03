@@ -52,7 +52,7 @@ class DAO():
             cursor.execute(query, (store, k))
             result = []
             for row in cursor:
-                result.append(row)
+                result.append({'source': row['source'], 'target': row['target'], 'weight': int(row['weight'])})
             return result
 
         finally:
