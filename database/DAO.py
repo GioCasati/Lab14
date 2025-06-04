@@ -42,14 +42,18 @@ class DAO():
         cnx = DBConnect.get_connection()
         cursor = cnx.cursor(dictionary=True)
         try:
-            query = f"""select o1.order_id as source, o2.order_id as target, sum(oi1.quantity)+sum(oi2.quantity) as weight
-                        from orders o1, orders o2, order_items oi1, order_items oi2
-                        where o2.store_id = o1.store_id and o1.order_id != o2.order_id
-                            and o1.order_id = oi1.order_id and o2.order_id = oi2.order_id
-                            and o1.order_date > o2.order_date
-                            and o1.store_id = %s and DATEDIFF(o1.order_date, o2.order_date) < %s
-                        group by o1.order_id, o2.order_id"""
-            cursor.execute(query, (store, k))
+            query = f"""select of1.order_id as source, of2.order_id as target, of1.tot+of2.tot as weight
+                        from   (select o.order_id as order_id , sum(oi.quantity) as tot, o.order_date as order_date
+                                from orders o , order_items oi 
+                                where o.order_id = oi.order_id and o.store_id = %s
+                                group by o.order_id) of1,
+                               (select o1.order_id as order_id , sum(oi1.quantity) as tot, o1.order_date as order_date
+                                from orders o1 , order_items oi1 
+                                where o1.order_id = oi1.order_id and o1.store_id = %s
+                                group by o1.order_id) of2
+                        where of1.order_id != of2.order_id and of1.order_date > of2.order_date and
+                        DATEDIFF(of1.order_date, of2.order_date) < %s"""
+            cursor.execute(query, (store, store, k))
             result = []
             for row in cursor:
                 result.append(row)
